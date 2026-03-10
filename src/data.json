@@ -1,0 +1,184 @@
+{
+  "staff": [
+    {
+      "id": "1",
+      "name": "Ade Kurniadhi",
+      "role": "Product Lead",
+      "department": "Product Design",
+      "location": "Indonesia",
+      "initials": "AK",
+      "weeklyAllocation": 32,
+      "maxHours": 40
+    },
+    {
+      "id": "2",
+      "name": "Anty Satriani",
+      "role": "Interaction Designer",
+      "department": "Interactive Media",
+      "location": "Singapore",
+      "initials": "AS",
+      "weeklyAllocation": 38,
+      "maxHours": 40
+    },
+    {
+      "id": "3",
+      "name": "Atika Apsari",
+      "role": "Interaction Designer",
+      "department": "Interactive Media",
+      "location": "Singapore",
+      "initials": "AA",
+      "weeklyAllocation": 10,
+      "maxHours": 40
+    },
+    {
+      "id": "4",
+      "name": "Billy Gerrardus",
+      "role": "Interaction Designer",
+      "department": "Interactive Media",
+      "location": "Indonesia",
+      "initials": "BG",
+      "weeklyAllocation": 40,
+      "maxHours": 40
+    },
+    {
+      "id": "5",
+      "name": "Chanchan Jiang",
+      "role": "Project Director",
+      "department": "Landscape Arch",
+      "location": "Singapore",
+      "initials": "CJ",
+      "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuDAb8fpEJ5mFswdBUzDtcscCyYlujy9ZBbO3-yghAzMHyFuPTjZWhK8O2Ykdzo03g7ZDN7s8-pIUD-3CuukjBWKh0IhHn7OnXHBnfGnGc0rCTZFMNnlw8OKN8EbWITdwhKXt3986sKM-M6zz-4fAFMz78T7mAoSFILlZ7Ley6rwF15cxG2o37gz2gv5cfr-sDi9sGOxC5hUEgVtWC_YDScCK5U7FdnLcmYbcZTBgDPE2AIRBJJfvyO91FVMsG1pmZQqGchC9lx2qC8",
+      "weeklyAllocation": 40,
+      "maxHours": 40
+    },
+    {
+      "id": "6",
+      "name": "Yorke Wu",
+      "role": "Design Director",
+      "department": "Product Design",
+      "location": "Singapore",
+      "initials": "YW",
+      "weeklyAllocation": 20,
+      "maxHours": 40
+    },
+    {
+      "id": "7",
+      "name": "Sarah Chen",
+      "role": "Senior Architect",
+      "department": "Architecture",
+      "location": "Singapore",
+      "initials": "SC",
+      "weeklyAllocation": 35,
+      "maxHours": 40
+    }
+  ],
+  "projects": [
+    {
+      "id": "p1",
+      "name": "Xiamen Red Coral",
+      "code": "PRJ-001",
+      "client": "Coastal Dev",
+      "ownerId": "1",
+      "stage": "Confirmed",
+      "billable": true,
+      "tags": ["Beach Resort"],
+      "startDate": "2026-02-01",
+      "endDate": "2026-05-31",
+      "totalAllocation": 85,
+      "teamSize": 12,
+      "color": "#ec5b13"
+    },
+    {
+      "id": "p2",
+      "name": "Blue Bay Masterplan",
+      "code": "PRJ-002",
+      "client": "EcoGroup",
+      "ownerId": "2",
+      "stage": "Confirmed",
+      "billable": true,
+      "tags": ["Master Planning"],
+      "startDate": "2026-01-01",
+      "endDate": "2026-06-15",
+      "totalAllocation": 60,
+      "teamSize": 8,
+      "color": "#3b82f6"
+    },
+    {
+      "id": "p3",
+      "name": "Skyline Tower",
+      "code": "PRJ-003",
+      "client": "Urban Ltd",
+      "ownerId": "3",
+      "stage": "Tentative",
+      "billable": true,
+      "tags": ["High-Rise"],
+      "startDate": "2026-01-10",
+      "endDate": "2026-04-30",
+      "totalAllocation": 45,
+      "teamSize": 25,
+      "color": "#eab308"
+    },
+    {
+      "id": "p4",
+      "name": "Desert Oasis",
+      "code": "PRJ-004",
+      "client": "Nomad Corp",
+      "ownerId": "4",
+      "stage": "Confirmed",
+      "billable": true,
+      "tags": ["Blue"],
+      "startDate": "2026-02-20",
+      "endDate": "2026-08-12",
+      "totalAllocation": 100,
+      "teamSize": 5,
+      "color": "#14b8a6"
+    },
+    {
+      "id": "p5",
+      "name": "Overall DMP",
+      "code": "PRJ-005",
+      "client": "Saadiyat",
+      "ownerId": "2",
+      "stage": "Confirmed",
+      "billable": true,
+      "tags": ["Masterplan"],
+      "startDate": "2026-03-01",
+      "endDate": "2026-06-30",
+      "totalAllocation": 75,
+      "teamSize": 6,
+      "color": "#8b5cf6"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "projectId": "p1",
+      "staffId": "1",
+      "title": "Lap Dinh - S02 Pre...",
+      "startDate": "2026-03-01",
+      "endDate": "2026-03-10",
+      "hoursPerDay": 6,
+      "status": "In Progress"
+    },
+    {
+      "id": "t2",
+      "projectId": "p2",
+      "staffId": "1",
+      "title": "Stage 2 - DMP",
+      "startDate": "2026-03-11",
+      "endDate": "2026-03-14",
+      "hoursPerDay": 8,
+      "status": "In Progress"
+    },
+    {
+      "id": "t3",
+      "projectId": "p5",
+      "staffId": "2",
+      "title": "Overall DMP/ or TB 243020-Saadiyat M...",
+      "startDate": "2026-03-02",
+      "endDate": "2026-03-08",
+      "hoursPerDay": 8,
+      "status": "In Progress"
+    }
+  ]
+}
