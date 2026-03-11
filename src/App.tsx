@@ -1,16 +1,16 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { 
-  Calendar, 
-  LayoutGrid, 
-  Users, 
-  FolderOpen, 
-  Settings, 
-  Bell, 
-  Plus, 
-  Search, 
-  Filter, 
-  Download, 
-  ChevronRight, 
+import {
+  Calendar,
+  LayoutGrid,
+  Users,
+  FolderOpen,
+  Settings,
+  Bell,
+  Plus,
+  Search,
+  Filter,
+  Download,
+  ChevronRight,
   ChevronLeft,
   MoreHorizontal,
   Hexagon,
@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewType, Staff, Project, Task } from './types';
-import { MOCK_STAFF, MOCK_PROJECTS, MOCK_TASKS } from './constants';
+import { supabase } from './constants';
 import { getObservedHolidays } from './holidays';
 
 // --- Constants ---
@@ -67,17 +67,17 @@ const getDayPosition = (date: Date | string, timelineDates: Date[], pixelsPerDay
   const d = typeof date === 'string' ? new Date(date) : date;
   const dateStr = formatDate(d);
   const index = timelineDates.findIndex(dt => formatDate(dt) === dateStr);
-  
+
   if (index === -1) {
     const firstWeekdayIndex = timelineDates.findIndex(dt => dt >= d);
     return firstWeekdayIndex !== -1 ? firstWeekdayIndex * pixelsPerDay : -1;
   }
-  
+
   // If it's a string (from task data), we just return the start of the day
   if (typeof date === 'string') {
     return index * pixelsPerDay;
   }
-  
+
   // If it's a Date object (like new Date()), we include the time of day for accuracy
   const hours = d.getHours();
   const minutes = d.getMinutes();
@@ -118,7 +118,7 @@ const getTaskSegments = (startDate: string, endDate: string, timelineDates: Date
   const segments: TaskSegment[] = [];
   let currentSegmentStart: string | null = null;
   let currentSegmentEnd: string | null = null;
-  
+
   const taskDates = timelineDates.filter(d => {
     const dStr = formatDate(d);
     return dStr >= startDate && dStr <= endDate;
@@ -176,7 +176,7 @@ const getTaskPositions = (personTasks: Task[], heightMultiplier: number, minTop:
     if (dateCompare !== 0) return dateCompare;
     return b.hoursPerDay - a.hoursPerDay;
   });
-  
+
   const positions: Record<string, { top: number, height: number }> = {};
   const placed: { task: Task, top: number, bottom: number }[] = [];
   let maxBottom = 0;
@@ -184,13 +184,13 @@ const getTaskPositions = (personTasks: Task[], heightMultiplier: number, minTop:
   sortedTasks.forEach(task => {
     const height = task.hoursPerDay * heightMultiplier;
     let currentTop = minTop;
-    
-    const overlappingInTime = placed.filter(p => 
+
+    const overlappingInTime = placed.filter(p =>
       task.startDate <= p.task.endDate && task.endDate >= p.task.startDate
     );
 
     overlappingInTime.sort((a, b) => a.top - b.top);
-    
+
     for (const p of overlappingInTime) {
       if (currentTop < p.bottom + gap && currentTop + height + gap > p.top) {
         currentTop = p.bottom + gap;
@@ -224,7 +224,7 @@ const useDragScroll = (ref: React.RefObject<HTMLDivElement>) => {
     if (!ref.current) return;
     // Only drag if clicking on the timeline area, not on buttons/inputs/interactive elements
     if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input') || (e.target as HTMLElement).closest('select')) return;
-    
+
     isDragging.current = true;
     startX.current = e.pageX - ref.current.offsetLeft;
     scrollLeftStart.current = ref.current.scrollLeft;
@@ -281,11 +281,10 @@ const Sidebar = ({ currentView, setView }: { currentView: ViewType, setView: (v:
           <button
             key={item.id}
             onClick={() => setView(item.id as ViewType)}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors group relative ${
-              currentView === item.id 
-                ? 'text-primary bg-blue-50' 
+            className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors group relative ${currentView === item.id
+                ? 'text-primary bg-blue-50'
                 : 'text-slate-400 hover:text-primary hover:bg-slate-100'
-            }`}
+              }`}
           >
             <span className="material-symbols-outlined">{item.icon}</span>
             <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
@@ -304,9 +303,9 @@ const Sidebar = ({ currentView, setView }: { currentView: ViewType, setView: (v:
           <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">Notifications</div>
         </button>
         <div className="relative group">
-          <img 
-            alt="User Profile" 
-            className="w-8 h-8 rounded-full border border-border-light cursor-pointer" 
+          <img
+            alt="User Profile"
+            className="w-8 h-8 rounded-full border border-border-light cursor-pointer"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuDavGzwJXZfQirWAUGAERQDbQkh2zRM50ox-p8Qklp-7UFRxU1bwzfsYv_T_40NHb1PSapfLY5PpLH53D7VdQL46n4xzqIA3ZXq78W-BGM3JpkntOjzTNjauBXFnGrnu-hNE0Uo-WSx9J8eqO4ubJf5Xl8h0XT8hGm_csCykNu8wwyUPJx7unnr90OfPclyOk-sQFinUf0oJOBUGRFWGroRhqVACr-DfVECUtzitpsGoB9J_i17vv0imxVZYVR-hT0vd2_fGcUzYoQ"
           />
           <div className="absolute left-full ml-4 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">Profile</div>
@@ -324,10 +323,10 @@ const ProjectsView = ({ projects, onAddProject }: { projects: Project[], onAddPr
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              className="pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm w-64 focus:ring-2 focus:ring-primary/20 outline-none" 
-              placeholder="Search projects..." 
-              type="text" 
+            <input
+              className="pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm w-64 focus:ring-2 focus:ring-primary/20 outline-none"
+              placeholder="Search projects..."
+              type="text"
             />
           </div>
           <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
@@ -337,7 +336,7 @@ const ProjectsView = ({ projects, onAddProject }: { projects: Project[], onAddPr
           <button className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50">
             <Download size={18} />
           </button>
-          <button 
+          <button
             onClick={onAddProject}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
           >
@@ -440,7 +439,7 @@ const PeopleView = ({ staff, onAddPerson, onEditPerson, onDeletePerson }: { staf
               <Download size={18} className="mr-2" />
               Export
             </button>
-            <button 
+            <button
               onClick={onAddPerson}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-colors"
             >
@@ -472,7 +471,7 @@ const PeopleView = ({ staff, onAddPerson, onEditPerson, onDeletePerson }: { staf
           {staff.map((person) => (
             <div key={person.id} className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow group relative flex flex-col h-full">
               <div className="absolute top-4 right-4 z-10">
-                <button 
+                <button
                   className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -483,7 +482,7 @@ const PeopleView = ({ staff, onAddPerson, onEditPerson, onDeletePerson }: { staf
                 </button>
                 {activeMenu === person.id && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 py-1 z-20">
-                    <button 
+                    <button
                       onClick={() => {
                         onEditPerson(person);
                         setActiveMenu(null);
@@ -493,7 +492,7 @@ const PeopleView = ({ staff, onAddPerson, onEditPerson, onDeletePerson }: { staf
                       <Edit size={14} className="mr-2" />
                       Edit Member
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         onDeletePerson(person.id);
                         setActiveMenu(null);
@@ -536,15 +535,15 @@ const PeopleView = ({ staff, onAddPerson, onEditPerson, onDeletePerson }: { staf
                   <span className="text-xs font-semibold text-gray-900">{person.weeklyAllocation}h / {person.maxHours}h</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${person.weeklyAllocation >= person.maxHours ? 'bg-red-500' : 'bg-primary'}`} 
+                  <div
+                    className={`h-2 rounded-full ${person.weeklyAllocation >= person.maxHours ? 'bg-red-500' : 'bg-primary'}`}
                     style={{ width: `${(person.weeklyAllocation / person.maxHours) * 100}%` }}
                   ></div>
                 </div>
               </div>
             </div>
           ))}
-          <div 
+          <div
             onClick={onAddPerson}
             className="bg-white rounded-lg border-2 border-dashed border-slate-200 hover:border-primary hover:bg-blue-50 cursor-pointer flex flex-col items-center justify-center p-6 text-center transition-colors h-full min-h-[280px]"
           >
@@ -574,7 +573,7 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !code) return;
-    
+
     onCreate({
       name,
       code,
@@ -588,14 +587,14 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
       endDate: formatDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // Default +30 days
       totalAllocation: 0,
       teamSize: 0,
-      color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0') // Random color
+      color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0') // Random color
     });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-xl shadow-2xl w-[640px] max-w-[90vw] overflow-hidden border border-slate-200"
@@ -609,10 +608,10 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Project Name</label>
-                <input 
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
-                  placeholder="Enter project name" 
-                  type="text" 
+                <input
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  placeholder="Enter project name"
+                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -620,10 +619,10 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Project Code</label>
-                <input 
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
-                  placeholder="e.g. PRJ-2024-01" 
-                  type="text" 
+                <input
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  placeholder="e.g. PRJ-2024-01"
+                  type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   required
@@ -634,7 +633,7 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Owner</label>
-                <select 
+                <select
                   className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   value={ownerId}
                   onChange={(e) => setOwnerId(e.target.value)}
@@ -645,7 +644,7 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Stage</label>
-                <select 
+                <select
                   className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   value={stage}
                   onChange={(e) => setStage(e.target.value as any)}
@@ -660,20 +659,20 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Client</label>
-                <input 
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
-                  placeholder="Enter client name" 
-                  type="text" 
+                <input
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  placeholder="Enter client name"
+                  type="text"
                   value={client}
                   onChange={(e) => setClient(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Tags</label>
-                <input 
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
-                  placeholder="Add tags (separated by commas)" 
-                  type="text" 
+                <input
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                  placeholder="Add tags (separated by commas)"
+                  type="text"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                 />
@@ -682,8 +681,8 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700">Notes</label>
-              <textarea 
-                className="w-full px-4 py-3 min-h-[100px] rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
+              <textarea
+                className="w-full px-4 py-3 min-h-[100px] rounded-lg border border-slate-300 bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                 placeholder="Optional project description..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -700,11 +699,11 @@ const AddProjectModal = ({ isOpen, onClose, onCreate }: { isOpen: boolean, onClo
   );
 };
 
-const ScheduleView = ({ 
-  staff, 
-  tasks, 
-  projects, 
-  onTaskClick, 
+const ScheduleView = ({
+  staff,
+  tasks,
+  projects,
+  onTaskClick,
   onAddTask,
   onAddTaskImmediate,
   onUpdateTask,
@@ -721,11 +720,11 @@ const ScheduleView = ({
   onAddProject,
   selectedDepartment,
   onDepartmentChange
-}: { 
-  staff: Staff[], 
-  tasks: Task[], 
-  projects: Project[], 
-  onTaskClick: (t: Task) => void, 
+}: {
+  staff: Staff[],
+  tasks: Task[],
+  projects: Project[],
+  onTaskClick: (t: Task) => void,
   onAddTask: (initials?: Partial<Task>) => void,
   onAddTaskImmediate: (task: Partial<Task>) => void,
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void,
@@ -747,14 +746,14 @@ const ScheduleView = ({
   const [isZoomDropdownOpen, setIsZoomDropdownOpen] = React.useState(false);
   const [isAddDropdownOpen, setIsAddDropdownOpen] = React.useState(false);
   const dragHandlers = useDragScroll(scrollRef);
-  const [resizing, setResizing] = React.useState<{ 
-    id: string, 
-    edge: 'left' | 'right' | 'bottom', 
-    startX: number, 
-    startY: number, 
+  const [resizing, setResizing] = React.useState<{
+    id: string,
+    edge: 'left' | 'right' | 'bottom',
+    startX: number,
+    startY: number,
     initialStartDate?: string,
     initialEndDate?: string,
-    initialHours?: number 
+    initialHours?: number
   } | null>(null);
   const [dragging, setDragging] = React.useState<{
     id: string,
@@ -774,15 +773,15 @@ const ScheduleView = ({
   const { rowHeights, taskPositions } = React.useMemo(() => {
     const heights: Record<string, number> = {};
     const positions: Record<string, { top: number, height: number }> = {};
-    
+
     staff.forEach(person => {
       const personTasks = tasks.filter(t => t.staffId === person.id);
       const { positions: personPositions, maxBottom } = getTaskPositions(personTasks, 14, 8, 4);
-      
+
       Object.assign(positions, personPositions);
       heights[person.id] = Math.max(144, maxBottom + 16); // 144 is h-36, 16 for padding
     });
-    
+
     return { rowHeights: heights, taskPositions: positions };
   }, [staff, tasks]);
 
@@ -790,10 +789,10 @@ const ScheduleView = ({
     e.preventDefault();
     e.stopPropagation();
     hasMovedRef.current = false;
-    setResizing({ 
-      id: task.id, 
-      edge, 
-      startX: e.pageX, 
+    setResizing({
+      id: task.id,
+      edge,
+      startX: e.pageX,
       startY: e.pageY,
       initialStartDate: task.startDate,
       initialEndDate: task.endDate,
@@ -816,12 +815,12 @@ const ScheduleView = ({
 
   const handleTaskSplit = (task: Task, splitDate: string) => {
     if (splitDate <= task.startDate || splitDate > task.endDate) return;
-    
+
     const preEnd = getPreviousDay(splitDate, timelineDates);
-    
+
     // Update original task to end before split
     onUpdateTask(task.id, { endDate: preEnd });
-    
+
     // Add new task starting at split
     onAddTaskImmediate({
       ...task,
@@ -843,11 +842,11 @@ const ScheduleView = ({
           onUpdateTask(resizing.id, { hoursPerDay: Math.round(newHours * 2) / 2 });
         } else if (resizing.edge === 'left' || resizing.edge === 'right') {
           if (!scrollRef.current) return;
-          
+
           const rect = scrollRef.current.getBoundingClientRect();
           const xInTimeline = e.pageX - rect.left + scrollRef.current.scrollLeft - 256;
           const dateAtX = getDateAtX(xInTimeline, timelineDates, pixelsPerDay);
-          
+
           if (dateAtX) {
             if (resizing.edge === 'left') {
               if (dateAtX <= (resizing.initialEndDate || '')) {
@@ -863,22 +862,22 @@ const ScheduleView = ({
       } else if (dragging) {
         if (!scrollRef.current) return;
         hasMovedRef.current = true;
-        
+
         const rect = scrollRef.current.getBoundingClientRect();
         const deltaX = e.pageX - dragging.startX;
         const daysMoved = Math.round(deltaX / pixelsPerDay);
-        
+
         if (daysMoved !== 0) {
           const startIndex = timelineDates.findIndex(d => formatDate(d) === dragging.initialStartDate);
           const endIndex = timelineDates.findIndex(d => formatDate(d) === dragging.initialEndDate);
-          
+
           if (startIndex !== -1 && endIndex !== -1) {
             const newStartIndex = Math.max(0, Math.min(timelineDates.length - 1, startIndex + daysMoved));
             const newEndIndex = Math.max(0, Math.min(timelineDates.length - 1, endIndex + daysMoved));
-            
+
             const newStartDate = formatDate(timelineDates[newStartIndex]);
             const newEndDate = formatDate(timelineDates[newEndIndex]);
-            
+
             onUpdateTask(dragging.id, { startDate: newStartDate, endDate: newEndDate });
           }
         }
@@ -910,7 +909,7 @@ const ScheduleView = ({
         monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
         const prevMonday = new Date(monday);
         prevMonday.setDate(monday.getDate() - 7);
-        
+
         const startPos = getDayPosition(formatDate(prevMonday), timelineDates, pixelsPerDay);
         const scrollPos = Math.max(0, startPos);
         scrollRef.current.scrollLeft = scrollPos;
@@ -933,7 +932,7 @@ const ScheduleView = ({
       monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       const prevMonday = new Date(monday);
       prevMonday.setDate(monday.getDate() - 7);
-      
+
       const scrollPos = getDayPosition(formatDate(prevMonday), timelineDates, pixelsPerDay);
       scrollRef.current.scrollTo({ left: scrollPos, behavior: 'smooth' });
     }
@@ -948,7 +947,7 @@ const ScheduleView = ({
   // Group dates by week for the header
   const weeks: { weekNumber: number, monthLabel: string, days: Date[] }[] = [];
   let currentWeek: Date[] = [];
-  
+
   timelineDates.forEach((date, i) => {
     currentWeek.push(date);
     // Group by Friday or end of timeline
@@ -966,7 +965,7 @@ const ScheduleView = ({
       currentWeek = [];
     }
   });
-  
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <header className="bg-surface-light border-b border-border-light p-4 flex items-center justify-between shrink-0 shadow-sm z-50 relative">
@@ -975,7 +974,7 @@ const ScheduleView = ({
           <div className="h-6 w-px bg-border-light mx-2"></div>
           <div className="relative flex items-center">
             <span className="material-icons-outlined text-lg absolute left-2 text-slate-400 pointer-events-none">category</span>
-            <select 
+            <select
               value={selectedDepartment}
               onChange={(e) => onDepartmentChange(e.target.value)}
               className="pl-9 pr-8 py-1.5 border border-border-light rounded bg-white text-sm font-medium outline-none appearance-none hover:bg-slate-50 transition-colors cursor-pointer"
@@ -994,19 +993,19 @@ const ScheduleView = ({
             <span>All Filters</span>
           </button>
           <div className="flex items-center border border-border-light rounded overflow-hidden">
-            <button 
+            <button
               onClick={() => scrollBy(-5)}
               className="px-3 py-1.5 hover:bg-slate-50 border-r border-border-light text-text-muted-light"
             >
               <span className="material-icons-outlined text-lg">chevron_left</span>
             </button>
-            <button 
+            <button
               onClick={scrollToToday}
               className="px-4 py-1.5 text-sm font-medium hover:bg-slate-50"
             >
               This week
             </button>
-            <button 
+            <button
               onClick={() => scrollBy(5)}
               className="px-3 py-1.5 hover:bg-slate-50 border-l border-border-light text-text-muted-light"
             >
@@ -1017,14 +1016,14 @@ const ScheduleView = ({
         <div className="flex items-center space-x-3">
           <span className="text-xs font-semibold text-text-muted-light bg-slate-100 px-2 py-1 rounded">47.5h scheduled</span>
           <div className="h-6 w-px bg-border-light mx-2"></div>
-          <button 
+          <button
             onClick={scrollToToday}
             className="px-3 py-1.5 border border-border-light rounded hover:bg-slate-50 text-sm font-medium"
           >
             Today
           </button>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsZoomDropdownOpen(!isZoomDropdownOpen)}
               className="flex items-center space-x-1 px-3 py-1.5 border border-border-light rounded hover:bg-slate-50 text-sm font-medium capitalize"
             >
@@ -1033,7 +1032,7 @@ const ScheduleView = ({
             </button>
             <AnimatePresence>
               {isZoomDropdownOpen && (
-                <motion.div 
+                <motion.div
                   key="dropdown"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1067,7 +1066,7 @@ const ScheduleView = ({
             <span className="material-icons-outlined">open_in_new</span>
           </button>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsAddDropdownOpen(!isAddDropdownOpen)}
               className="w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded flex items-center justify-center shadow-md transition-colors"
             >
@@ -1077,27 +1076,27 @@ const ScheduleView = ({
               {isAddDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsAddDropdownOpen(false)}></div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-56 bg-white border border-border-light rounded-xl shadow-xl z-50 overflow-hidden py-1"
                   >
-                    <button 
+                    <button
                       onClick={() => { onAddTask(); setIsAddDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
                       <span className="material-icons-outlined text-lg text-slate-400">event_available</span>
                       <span className="font-medium">Add Allocation</span>
                     </button>
-                    <button 
+                    <button
                       onClick={() => { onAddProject(); setIsAddDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
                       <span className="material-icons-outlined text-lg text-slate-400">create_new_folder</span>
                       <span className="font-medium">Add Project</span>
                     </button>
-                    <button 
+                    <button
                       onClick={() => { onAddPerson(); setIsAddDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
@@ -1112,7 +1111,7 @@ const ScheduleView = ({
         </div>
       </header>
 
-      <div 
+      <div
         ref={scrollRef}
         onScroll={handleScroll}
         {...dragHandlers}
@@ -1122,7 +1121,7 @@ const ScheduleView = ({
           <div className="flex sticky-header bg-white z-40 shadow-sm border-b border-border-light">
             <div className="sticky-col w-64 min-w-[16rem] bg-white border-r border-border-light sticky-corner z-50 flex items-center px-4 py-2 justify-between">
               <div className="flex items-center space-x-2 text-text-muted-light">
-                <span 
+                <span
                   className="material-icons-outlined text-lg cursor-pointer hover:text-primary"
                   onClick={onAddPerson}
                 >
@@ -1145,12 +1144,12 @@ const ScheduleView = ({
                       const isFriday = day.getDay() === 5;
                       const isHoliday = OBSERVED_HOLIDAYS.has(formatDate(day));
                       return (
-                        <div 
-                          key={dIdx} 
+                        <div
+                          key={dIdx}
                           className={`border-r ${isFriday ? 'border-r-2 border-slate-300' : 'border-border-light'} flex flex-col justify-center items-center text-[10px] shrink-0 text-text-muted-light ${isToday ? 'bg-blue-50/30 border-t-2 border-t-primary' : ''} ${isHoliday ? 'holiday-hatch' : ''}`}
                           style={{ width: pixelsPerDay }}
                         >
-                          <span className={`${isToday ? 'text-primary font-bold' : ''}`}>{['S','M','T','W','T','F','S'][day.getDay()]}</span>
+                          <span className={`${isToday ? 'text-primary font-bold' : ''}`}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.getDay()]}</span>
                           <span className={`flex items-center justify-center w-6 h-6 rounded-full mt-0.5 ${isToday ? 'bg-primary text-white font-bold' : 'text-text-main-light'}`}>
                             {day.getDate()}
                           </span>
@@ -1165,8 +1164,8 @@ const ScheduleView = ({
 
           <div className="flex flex-col">
             {staff.map(person => (
-              <div 
-                key={person.id} 
+              <div
+                key={person.id}
                 className="flex border-b border-border-light group hover:bg-slate-50 transition-colors"
                 style={{ height: rowHeights[person.id] }}
               >
@@ -1192,7 +1191,7 @@ const ScheduleView = ({
                     </div>
                   </div>
                 </div>
-                <div 
+                <div
                   className="flex-1 relative py-2 px-0 cursor-crosshair"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -1217,18 +1216,18 @@ const ScheduleView = ({
                       const dStr = formatDate(date);
                       const isHoliday = OBSERVED_HOLIDAYS.has(dStr);
                       const totalHours = dailyAllocations[person.id]?.[dStr] || 0;
-                      
+
                       return (
                         <React.Fragment key={i}>
                           {isHoliday && (
-                            <div 
+                            <div
                               className="absolute top-0 bottom-0 holiday-hatch z-0"
                               style={{ left: i * pixelsPerDay, width: pixelsPerDay }}
                             />
                           )}
                           {totalHours > 8 && (
-                            <div 
-                              className="absolute top-0 bottom-0 bg-red-500/20 border-x border-red-500/30 z-0" 
+                            <div
+                              className="absolute top-0 bottom-0 bg-red-500/20 border-x border-red-500/30 z-0"
                               style={{ left: i * pixelsPerDay, width: pixelsPerDay }}
                             />
                           )}
@@ -1240,9 +1239,9 @@ const ScheduleView = ({
                   {tasks.filter(t => t.staffId === person.id).map(task => {
                     const project = projects.find(p => p.id === task.projectId);
                     const segments = getTaskSegments(task.startDate, task.endDate, timelineDates, pixelsPerDay);
-                    
+
                     if (segments.length === 0) return null;
-                    
+
                     // Use project color if available, otherwise fallback to defaults
                     const isTimeOff = task.type === 'Time off';
                     const projectColor = isTimeOff ? '#ef4444' : (project?.color || '#94a3b8');
@@ -1252,7 +1251,7 @@ const ScheduleView = ({
                     return (
                       <React.Fragment key={task.id}>
                         {segments.map((segment, idx) => (
-                          <div 
+                          <div
                             key={`${task.id}-${idx}`}
                             onMouseDown={(e) => handleDragStart(e, task)}
                             onContextMenu={(e) => {
@@ -1266,31 +1265,31 @@ const ScheduleView = ({
                                 setContextMenu({ x: e.pageX, y: e.pageY, task, date: dateAtX });
                               }
                             }}
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
+                            onClick={(e) => {
+                              e.stopPropagation();
                               if (hasMovedRef.current) {
                                 hasMovedRef.current = false;
                                 return;
                               }
-                              onTaskClick(task); 
+                              onTaskClick(task);
                             }}
                             className={`absolute rounded shadow-md cursor-grab active:cursor-grabbing hover:brightness-95 flex flex-col p-1.5 overflow-hidden border-l-4 group/task z-10 ${isResizing ? 'ring-2 ring-primary z-20' : ''} ${dragging?.id === task.id ? 'opacity-50 z-30' : ''} ${isTimeOff ? 'time-off-hatch' : ''}`}
-                            style={{ 
-                              left: segment.left, 
-                              width: segment.width, 
+                            style={{
+                              left: segment.left,
+                              width: segment.width,
                               top: `${pos.top}px`,
                               height: `${pos.height}px`,
-                              backgroundColor: isTimeOff ? 'transparent' : projectColor, 
+                              backgroundColor: isTimeOff ? 'transparent' : projectColor,
                               borderColor: projectColor,
                               color: 'white',
                             }}
                           >
                             <span className="text-[10px] font-normal truncate leading-tight">{task.title}</span>
                             <span className="text-[10px] mt-auto text-right font-normal">{task.hoursPerDay}h</span>
-                            
+
                             {/* Left Resize handle */}
                             {segment.isFirst && (
-                              <div 
+                              <div
                                 onMouseDown={(e) => handleResizeStart(e, task, 'left')}
                                 className="absolute top-0 left-0 bottom-0 w-1.5 cursor-ew-resize bg-transparent hover:bg-black/10 opacity-0 group-hover/task:opacity-100 transition-opacity z-20"
                               />
@@ -1298,14 +1297,14 @@ const ScheduleView = ({
 
                             {/* Right Resize handle */}
                             {segment.isLast && (
-                              <div 
+                              <div
                                 onMouseDown={(e) => handleResizeStart(e, task, 'right')}
                                 className="absolute top-0 right-0 bottom-0 w-1.5 cursor-ew-resize bg-transparent hover:bg-black/10 opacity-0 group-hover/task:opacity-100 transition-opacity z-20"
                               />
                             )}
 
                             {/* Bottom Resize handle */}
-                            <div 
+                            <div
                               onMouseDown={(e) => handleResizeStart(e, task, 'bottom')}
                               className="absolute bottom-0 left-1.5 right-1.5 h-2 cursor-ns-resize bg-transparent hover:bg-black/5 flex items-center justify-center opacity-0 group-hover/task:opacity-100 transition-opacity z-20"
                             >
@@ -1321,7 +1320,7 @@ const ScheduleView = ({
             ))}
           </div>
           {/* Today line */}
-          <div 
+          <div
             className="absolute top-0 bottom-0 w-px bg-red-500 z-20 pointer-events-none"
             style={{ left: getDayPosition(new Date(), timelineDates, pixelsPerDay) + 256 }}
           >
@@ -1332,14 +1331,14 @@ const ScheduleView = ({
             {contextMenu && (
               <>
                 <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}></div>
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="fixed z-[100] bg-white border border-border-light rounded-md shadow-xl py-1 w-36 overflow-hidden"
                   style={{ left: contextMenu.x, top: contextMenu.y }}
                 >
-                  <button 
+                  <button
                     onClick={() => {
                       handleTaskSplit(contextMenu.task, contextMenu.date);
                       setContextMenu(null);
@@ -1349,7 +1348,7 @@ const ScheduleView = ({
                     <span className="material-icons-outlined text-lg text-slate-400">call_split</span>
                     <span className="font-medium">Split</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       onDeleteTask(contextMenu.task.id);
                       setContextMenu(null);
@@ -1398,7 +1397,7 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !role) return;
-    
+
     onSave({
       id: initialData?.id,
       name,
@@ -1413,7 +1412,7 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-xl shadow-2xl w-[480px] max-w-[90vw] overflow-hidden border border-slate-200"
@@ -1426,9 +1425,9 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
           <div className="p-6 space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Full Name</label>
-              <input 
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none" 
-                placeholder="e.g. John Doe" 
+              <input
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none"
+                placeholder="e.g. John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -1436,9 +1435,9 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-500">Role</label>
-              <input 
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none" 
-                placeholder="e.g. UI Designer" 
+              <input
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none"
+                placeholder="e.g. UI Designer"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 required
@@ -1447,7 +1446,7 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Department</label>
-                <select 
+                <select
                   className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
@@ -1461,9 +1460,9 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Location</label>
-                <input 
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none" 
-                  placeholder="e.g. London" 
+                <input
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none"
+                  placeholder="e.g. London"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
@@ -1480,20 +1479,20 @@ const StaffModal = ({ isOpen, onClose, onSave, initialData }: { isOpen: boolean,
   );
 };
 
-const TaskModal = ({ 
-  isOpen, 
-  onClose, 
-  task, 
-  projects, 
-  staff, 
+const TaskModal = ({
+  isOpen,
+  onClose,
+  task,
+  projects,
+  staff,
   onDelete,
   onUpdate
-}: { 
-  isOpen: boolean, 
-  onClose: () => void, 
-  task: Task | null, 
-  projects: Project[], 
-  staff: Staff[], 
+}: {
+  isOpen: boolean,
+  onClose: () => void,
+  task: Task | null,
+  projects: Project[],
+  staff: Staff[],
   onDelete: (id: string) => void,
   onUpdate: (taskId: string, updates: Partial<Task>) => void
 }) => {
@@ -1527,7 +1526,7 @@ const TaskModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-xl shadow-2xl w-[480px] max-w-[90vw] overflow-hidden border border-slate-200"
@@ -1551,9 +1550,9 @@ const TaskModal = ({
               <label className="block text-xs font-medium text-slate-500 mb-1.5">Start Date</label>
               <div className="flex items-center text-sm text-slate-900 bg-white px-3 py-2 rounded border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
                 <Calendar size={16} className="mr-2 text-slate-400" />
-                <input 
-                  type="date" 
-                  value={startDate} 
+                <input
+                  type="date"
+                  value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="bg-transparent border-none outline-none w-full"
                 />
@@ -1563,9 +1562,9 @@ const TaskModal = ({
               <label className="block text-xs font-medium text-slate-500 mb-1.5">End Date</label>
               <div className="flex items-center text-sm text-slate-900 bg-white px-3 py-2 rounded border border-slate-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
                 <Calendar size={16} className="mr-2 text-slate-400" />
-                <input 
-                  type="date" 
-                  value={endDate} 
+                <input
+                  type="date"
+                  value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="bg-transparent border-none outline-none w-full"
                 />
@@ -1574,8 +1573,8 @@ const TaskModal = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1.5">Description</label>
-            <textarea 
-              className="w-full text-sm bg-white border border-slate-200 rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none min-h-[80px]" 
+            <textarea
+              className="w-full text-sm bg-white border border-slate-200 rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none min-h-[80px]"
               placeholder="Add a description..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -1600,9 +1599,9 @@ const TaskModal = ({
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-1">
-                  <input 
-                    type="number" 
-                    value={hoursPerDay} 
+                  <input
+                    type="number"
+                    value={hoursPerDay}
                     onChange={(e) => setHoursPerDay(Number(e.target.value))}
                     className="w-12 text-sm font-semibold bg-white border border-slate-200 rounded px-1 py-0.5 text-right outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -1614,7 +1613,7 @@ const TaskModal = ({
           </div>
         </div>
         <div className="px-6 py-4 bg-slate-50 flex justify-between items-center border-t border-slate-200">
-          <button 
+          <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -1635,10 +1634,10 @@ const TaskModal = ({
   );
 };
 
-const ProjectPlanView = ({ 
-  projects, 
-  staff, 
-  tasks, 
+const ProjectPlanView = ({
+  projects,
+  staff,
+  tasks,
   onAddTask,
   onAddTaskImmediate,
   onUpdateTask,
@@ -1656,10 +1655,10 @@ const ProjectPlanView = ({
   onAddProject,
   selectedDepartment,
   onDepartmentChange
-}: { 
-  projects: Project[], 
-  staff: Staff[], 
-  tasks: Task[], 
+}: {
+  projects: Project[],
+  staff: Staff[],
+  tasks: Task[],
   onAddTask: (initials?: Partial<Task>) => void,
   onAddTaskImmediate: (task: Partial<Task>) => void,
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void,
@@ -1700,20 +1699,20 @@ const ProjectPlanView = ({
   const { rowHeights, taskPositions } = React.useMemo(() => {
     const heights: Record<string, number> = {};
     const positions: Record<string, { top: number, height: number }> = {};
-    
+
     projects.forEach(project => {
       staff.forEach(person => {
         const personTasks = tasks.filter(t => t.staffId === person.id && t.projectId === project.id);
         if (personTasks.length > 0) {
           const key = `${project.id}-${person.id}`;
           const { positions: personPositions, maxBottom } = getTaskPositions(personTasks, 6, 8, 4);
-          
+
           Object.assign(positions, personPositions);
           heights[key] = Math.max(64, maxBottom + 16); // 64 is h-16, 16 for padding
         }
       });
     });
-    
+
     return { rowHeights: heights, taskPositions: positions };
   }, [projects, staff, tasks]);
 
@@ -1763,18 +1762,18 @@ const ProjectPlanView = ({
         const rect = scrollRef.current.getBoundingClientRect();
         const deltaX = e.pageX - draggingTask.startX;
         const daysMoved = Math.round(deltaX / pixelsPerDay);
-        
+
         if (daysMoved !== 0) {
           const startIndex = timelineDates.findIndex(d => formatDate(d) === draggingTask.initialStartDate);
           const endIndex = timelineDates.findIndex(d => formatDate(d) === draggingTask.initialEndDate);
-          
+
           if (startIndex !== -1 && endIndex !== -1) {
             const newStartIndex = Math.max(0, Math.min(timelineDates.length - 1, startIndex + daysMoved));
             const newEndIndex = Math.max(0, Math.min(timelineDates.length - 1, endIndex + daysMoved));
-            
+
             const newStartDate = formatDate(timelineDates[newStartIndex]);
             const newEndDate = formatDate(timelineDates[newEndIndex]);
-            
+
             onUpdateTask(draggingTask.id, { startDate: newStartDate, endDate: newEndDate });
           }
         }
@@ -1806,7 +1805,7 @@ const ProjectPlanView = ({
         monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
         const prevMonday = new Date(monday);
         prevMonday.setDate(monday.getDate() - 7);
-        
+
         const startPos = getDayPosition(formatDate(prevMonday), timelineDates, pixelsPerDay);
         const scrollPos = Math.max(0, startPos);
         scrollRef.current.scrollLeft = scrollPos;
@@ -1827,12 +1826,12 @@ const ProjectPlanView = ({
       const day = today.getDay();
       const monday = new Date(today);
       // Normalize today to midnight
-      today.setHours(0,0,0,0);
-      monday.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
+      monday.setHours(0, 0, 0, 0);
       monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       const prevMonday = new Date(monday);
       prevMonday.setDate(monday.getDate() - 7);
-      
+
       const scrollPos = getDayPosition(formatDate(prevMonday), timelineDates, pixelsPerDay);
       scrollRef.current.scrollTo({ left: scrollPos, behavior: 'smooth' });
     }
@@ -1847,7 +1846,7 @@ const ProjectPlanView = ({
   // Group dates by week for the header
   const weeks: { weekNumber: number, monthLabel: string, days: Date[] }[] = [];
   let currentWeek: Date[] = [];
-  
+
   timelineDates.forEach((date, i) => {
     currentWeek.push(date);
     // Group by Friday or end of timeline
@@ -1865,7 +1864,7 @@ const ProjectPlanView = ({
       currentWeek = [];
     }
   });
-  
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <header className="bg-surface-light border-b border-border-light p-4 flex items-center justify-between shrink-0 shadow-sm z-50 relative">
@@ -1874,7 +1873,7 @@ const ProjectPlanView = ({
           <div className="h-6 w-px bg-border-light mx-2"></div>
           <div className="relative flex items-center">
             <span className="material-icons-outlined text-lg absolute left-2 text-slate-400 pointer-events-none">category</span>
-            <select 
+            <select
               value={selectedDepartment}
               onChange={(e) => onDepartmentChange(e.target.value)}
               className="pl-9 pr-8 py-1.5 border border-border-light rounded bg-white text-sm font-medium outline-none appearance-none hover:bg-slate-50 transition-colors cursor-pointer"
@@ -1893,19 +1892,19 @@ const ProjectPlanView = ({
             <span>All Filters</span>
           </button>
           <div className="flex items-center border border-border-light rounded overflow-hidden">
-            <button 
+            <button
               onClick={() => scrollBy(-5)}
               className="px-3 py-1.5 hover:bg-slate-50 border-r border-border-light text-text-muted-light"
             >
               <span className="material-icons-outlined text-lg">chevron_left</span>
             </button>
-            <button 
+            <button
               onClick={scrollToToday}
               className="px-4 py-1.5 text-sm font-medium hover:bg-slate-50"
             >
               This week
             </button>
-            <button 
+            <button
               onClick={() => scrollBy(5)}
               className="px-3 py-1.5 hover:bg-slate-50 border-l border-border-light text-text-muted-light"
             >
@@ -1916,13 +1915,13 @@ const ProjectPlanView = ({
         <div className="flex items-center space-x-3">
           <span className="text-xs font-semibold text-text-muted-light bg-slate-100 px-2 py-1 rounded">Active Projects</span>
           <div className="h-6 w-px bg-border-light mx-2"></div>
-          <button 
+          <button
             onClick={scrollToToday}
             className="px-3 py-1.5 border border-border-light rounded hover:bg-slate-50 text-sm font-medium"
           >
             Today
           </button>
-          <button 
+          <button
             onClick={onAddPerson}
             className="flex items-center space-x-1 px-3 py-1.5 border border-border-light rounded hover:bg-slate-50 text-sm font-medium transition-colors"
           >
@@ -1930,7 +1929,7 @@ const ProjectPlanView = ({
             <span>Add People</span>
           </button>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsZoomDropdownOpen(!isZoomDropdownOpen)}
               className="flex items-center space-x-1 px-3 py-1.5 border border-border-light rounded hover:bg-slate-50 text-sm font-medium capitalize"
             >
@@ -1939,7 +1938,7 @@ const ProjectPlanView = ({
             </button>
             <AnimatePresence>
               {isZoomDropdownOpen && (
-                <motion.div 
+                <motion.div
                   key="dropdown"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1973,7 +1972,7 @@ const ProjectPlanView = ({
             <span className="material-icons-outlined">open_in_new</span>
           </button>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsAddDropdownOpen(!isAddDropdownOpen)}
               className="w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded flex items-center justify-center shadow-md transition-colors"
             >
@@ -1983,27 +1982,27 @@ const ProjectPlanView = ({
               {isAddDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsAddDropdownOpen(false)}></div>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-56 bg-white border border-border-light rounded-xl shadow-xl z-50 overflow-hidden py-1"
                   >
-                    <button 
+                    <button
                       onClick={() => { onAddTask(); setIsAddDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
                       <span className="material-icons-outlined text-lg text-slate-400">event_available</span>
                       <span className="font-medium">Add Allocation</span>
                     </button>
-                    <button 
+                    <button
                       onClick={() => { onAddProject(); setIsAddDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
                       <span className="material-icons-outlined text-lg text-slate-400">create_new_folder</span>
                       <span className="font-medium">Add Project</span>
                     </button>
-                    <button 
+                    <button
                       onClick={() => { onAddPerson(); setIsAddDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
@@ -2018,7 +2017,7 @@ const ProjectPlanView = ({
         </div>
       </header>
 
-      <div 
+      <div
         ref={scrollRef}
         onScroll={handleScroll}
         {...dragHandlers}
@@ -2042,12 +2041,12 @@ const ProjectPlanView = ({
                       const isFriday = day.getDay() === 5;
                       const isHoliday = OBSERVED_HOLIDAYS.has(formatDate(day));
                       return (
-                        <div 
-                          key={dIdx} 
+                        <div
+                          key={dIdx}
                           className={`border-r ${isFriday ? 'border-r-2 border-slate-300' : 'border-border-light'} flex flex-col justify-center items-center text-[10px] shrink-0 text-text-muted-light ${isToday ? 'bg-blue-50/30 border-t-2 border-t-primary' : ''} ${isHoliday ? 'holiday-hatch' : ''}`}
                           style={{ width: pixelsPerDay }}
                         >
-                          <span className={`${isToday ? 'text-primary font-bold' : ''}`}>{['S','M','T','W','T','F','S'][day.getDay()]}</span>
+                          <span className={`${isToday ? 'text-primary font-bold' : ''}`}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.getDay()]}</span>
                           <span className={`flex items-center justify-center w-6 h-6 rounded-full mt-0.5 ${isToday ? 'bg-primary text-white font-bold' : 'text-text-main-light'}`}>
                             {day.getDate()}
                           </span>
@@ -2081,9 +2080,9 @@ const ProjectPlanView = ({
                       const width = getTaskWidth(project.startDate, project.endDate, timelineDates, pixelsPerDay);
                       if (left === -1 || width === 0) return null;
                       return (
-                        <div 
+                        <div
                           className="absolute top-1.5 h-5 rounded-sm shadow-sm flex items-center px-2 overflow-hidden text-white text-[10px] font-normal"
-                          style={{ 
+                          style={{
                             backgroundColor: project.color,
                             left,
                             width
@@ -2107,7 +2106,7 @@ const ProjectPlanView = ({
                         <p className="text-[9px] text-slate-400">{person.role}</p>
                       </div>
                     </div>
-                    <div 
+                    <div
                       className="flex-1 relative py-2 px-0 cursor-crosshair"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -2132,20 +2131,20 @@ const ProjectPlanView = ({
                           const dStr = formatDate(date);
                           const isHoliday = OBSERVED_HOLIDAYS.has(dStr);
                           const totalHours = dailyAllocations[person.id]?.[dStr] || 0;
-                          
+
                           return (
                             <React.Fragment key={i}>
                               {isHoliday && (
-                                <div 
-                                  key={`holiday-${i}`} 
+                                <div
+                                  key={`holiday-${i}`}
                                   className="absolute top-0 bottom-0 holiday-hatch z-0"
                                   style={{ left: i * pixelsPerDay, width: pixelsPerDay }}
                                 />
                               )}
                               {totalHours > 8 && (
-                                <div 
+                                <div
                                   key={`over-${i}`}
-                                  className="absolute top-0 bottom-0 bg-red-500/20 border-x border-red-500/30 z-0" 
+                                  className="absolute top-0 bottom-0 bg-red-500/20 border-x border-red-500/30 z-0"
                                   style={{ left: i * pixelsPerDay, width: pixelsPerDay }}
                                 />
                               )}
@@ -2157,14 +2156,14 @@ const ProjectPlanView = ({
                       {tasks.filter(t => t.staffId === person.id && t.projectId === project.id).map(task => {
                         const segments = getTaskSegments(task.startDate, task.endDate, timelineDates, pixelsPerDay);
                         if (segments.length === 0) return null;
-                        
+
                         const isResizing = resizingTask?.id === task.id;
                         const pos = taskPositions[task.id] || { top: (64 - (task.hoursPerDay * 6)) / 2, height: task.hoursPerDay * 6 };
-                        
+
                         return (
                           <React.Fragment key={task.id}>
                             {segments.map((segment, idx) => (
-                              <div 
+                              <div
                                 key={`${task.id}-${idx}`}
                                 onMouseDown={(e) => handleDragStart(e, task)}
                                 onContextMenu={(e) => {
@@ -2178,16 +2177,16 @@ const ProjectPlanView = ({
                                     setContextMenu({ x: e.pageX, y: e.pageY, task, date: dateAtX });
                                   }
                                 }}
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   if (hasMovedRef.current) {
                                     hasMovedRef.current = false;
                                     return;
                                   }
-                                  onTaskClick && onTaskClick(task); 
+                                  onTaskClick && onTaskClick(task);
                                 }}
                                 className={`absolute rounded shadow-sm flex flex-col p-1 overflow-hidden text-white group/task cursor-grab active:cursor-grabbing ${isResizing ? 'ring-2 ring-white z-20' : ''} ${draggingTask?.id === task.id ? 'opacity-50 z-30' : ''}`}
-                                style={{ 
+                                style={{
                                   left: segment.left,
                                   width: segment.width,
                                   height: `${pos.height}px`,
@@ -2197,9 +2196,9 @@ const ProjectPlanView = ({
                               >
                                 <span className="text-[9px] font-normal truncate leading-tight">{task.title}</span>
                                 <span className="text-[8px] mt-auto text-right opacity-80 font-normal">{task.hoursPerDay}h</span>
-                                
+
                                 {/* Resize handle */}
-                                <div 
+                                <div
                                   onMouseDown={(e) => handleResizeStart(e, task)}
                                   className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize bg-transparent hover:bg-white/20 flex items-center justify-center opacity-0 group-hover/task:opacity-100 transition-opacity"
                                 >
@@ -2217,7 +2216,7 @@ const ProjectPlanView = ({
             ))}
           </div>
           {/* Today line */}
-          <div 
+          <div
             className="absolute top-0 bottom-0 w-px bg-red-500 z-20 pointer-events-none"
             style={{ left: getDayPosition(new Date(), timelineDates, pixelsPerDay) + 256 }}
           >
@@ -2228,14 +2227,14 @@ const ProjectPlanView = ({
             {contextMenu && (
               <>
                 <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}></div>
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="fixed z-[100] bg-white border border-border-light rounded-md shadow-xl py-1 w-36 overflow-hidden"
                   style={{ left: contextMenu.x, top: contextMenu.y }}
                 >
-                  <button 
+                  <button
                     onClick={() => {
                       handleTaskSplit(contextMenu.task, contextMenu.date);
                       setContextMenu(null);
@@ -2245,7 +2244,7 @@ const ProjectPlanView = ({
                     <span className="material-icons-outlined text-lg text-slate-400">call_split</span>
                     <span className="font-medium">Split</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       onDeleteTask(contextMenu.task.id);
                       setContextMenu(null);
@@ -2265,23 +2264,23 @@ const ProjectPlanView = ({
   );
 };
 
-const CreateTaskModal = ({ 
-  isOpen, 
-  onClose, 
-  onAdd, 
-  projects, 
+const CreateTaskModal = ({
+  isOpen,
+  onClose,
+  onAdd,
+  projects,
   staff,
   initialValues
-}: { 
-  isOpen: boolean, 
-  onClose: () => void, 
-  onAdd: (t: Partial<Task>) => void, 
-  projects: Project[], 
+}: {
+  isOpen: boolean,
+  onClose: () => void,
+  onAdd: (t: Partial<Task>) => void,
+  projects: Project[],
   staff: Staff[],
   initialValues?: Partial<Task>
 }) => {
   if (!isOpen) return null;
-  
+
   const [activeTab, setActiveTab] = useState<'Allocation' | 'Time off' | 'Status'>(
     (initialValues?.type as any) || 'Allocation'
   );
@@ -2325,7 +2324,7 @@ const CreateTaskModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-xl shadow-2xl w-[480px] max-w-[90vw] overflow-hidden border border-slate-200"
@@ -2343,11 +2342,10 @@ const CreateTaskModal = ({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                activeTab === tab 
-                  ? 'bg-white text-slate-900 shadow-sm' 
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === tab
+                  ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
-              }`}
+                }`}
             >
               {tab}
             </button>
@@ -2359,8 +2357,8 @@ const CreateTaskModal = ({
             <>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Task Title</label>
-                <input 
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none" 
+                <input
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-primary focus:border-primary outline-none"
                   placeholder="e.g. Concept Design"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -2368,7 +2366,7 @@ const CreateTaskModal = ({
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Project</label>
-                <select 
+                <select
                   className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
@@ -2383,7 +2381,7 @@ const CreateTaskModal = ({
             <>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Type of Leave</label>
-                <select 
+                <select
                   className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                   value={timeOffType}
                   onChange={(e) => setTimeOffType(e.target.value as any)}
@@ -2406,7 +2404,7 @@ const CreateTaskModal = ({
             <>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Assign To</label>
-                <select 
+                <select
                   className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                   value={staffId}
                   onChange={(e) => setStaffId(e.target.value)}
@@ -2417,18 +2415,18 @@ const CreateTaskModal = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-500">Start Date</label>
-                  <input 
-                    type="date" 
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none" 
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-500">End Date</label>
-                  <input 
-                    type="date" 
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none" 
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                   />
@@ -2436,9 +2434,9 @@ const CreateTaskModal = ({
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-500">Hours per Day</label>
-                <input 
-                  type="number" 
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none" 
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none"
                   value={hoursPerDay}
                   onChange={(e) => setHoursPerDay(Number(e.target.value))}
                 />
@@ -2461,32 +2459,24 @@ const CreateTaskModal = ({
 
 export default function App() {
   const [currentView, setView] = useState<ViewType>('schedule');
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('projects') : null;
-    return saved ? JSON.parse(saved) : MOCK_PROJECTS;
-  });
-  const [staff, setStaff] = useState<Staff[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('staff') : null;
-    return saved ? JSON.parse(saved) : MOCK_STAFF;
-  });
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('tasks') : null;
-    return saved ? JSON.parse(saved) : MOCK_TASKS;
-  });
-
-  // Persist changes
-  useEffect(() => {
-    localStorage.setItem('projects', JSON.stringify(projects));
-  }, [projects]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('staff', JSON.stringify(staff));
-  }, [staff]);
+    const fetchData = async () => {
+      const { data: staffData } = await supabase.from('staff').select('*');
+      const { data: projectsData } = await supabase.from('projects').select('*');
+      const { data: tasksData } = await supabase.from('tasks').select('*');
 
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }, [tasks]);
-  
+      if (staffData) setStaff(staffData);
+      if (projectsData) setProjects(projectsData);
+      if (tasksData) setTasks(tasksData);
+    };
+
+    fetchData();
+  }, []);
+
   const [isAddPersonModalOpen, setIsAddPersonModalOpen] = useState(false);
   const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -2498,7 +2488,7 @@ export default function App() {
   // Timeline State
   const [zoomLevel, setZoomLevel] = useState<'days' | 'weeks' | 'months'>('months');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-  
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
@@ -2515,7 +2505,7 @@ export default function App() {
   const timelineStartDate = useMemo(() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 3); // Start 3 months ago
-    d.setHours(0,0,0,0);
+    d.setHours(0, 0, 0, 0);
     return d;
   }, []);
   const timelineDates = useMemo(() => getTimelineDates(timelineStartDate), [timelineStartDate]);
@@ -2539,16 +2529,12 @@ export default function App() {
         teamSize: 0,
         color: newProject.color || '#94a3b8'
       };
-      
+
       setProjects(prev => [...prev, project]);
-      
+
       // Persist to server
       try {
-        await fetch('/api/projects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(project)
-        });
+        await supabase.from('projects').insert([project]);
       } catch (error) {
         console.error('Failed to persist project to server:', error);
       }
@@ -2575,14 +2561,10 @@ export default function App() {
           initials: newPerson.initials || '??'
         };
         setStaff(prev => [...prev, person]);
-        
+
         // Persist to server
         try {
-          await fetch('/api/staff', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(person)
-          });
+          await supabase.from('staff').insert([person]);
         } catch (error) {
           console.error('Failed to persist staff to server:', error);
         }
@@ -2601,12 +2583,10 @@ export default function App() {
     if (confirm('Are you sure you want to delete this team member? This will also remove their task assignments.')) {
       setStaff(prev => prev.filter(s => s.id !== personId));
       setTasks(prev => prev.filter(t => t.staffId !== personId));
-      
+
       // Persist to server
       try {
-        await fetch(`/api/staff/${personId}`, {
-          method: 'DELETE'
-        });
+        await supabase.from('staff').delete().eq('id', personId);
       } catch (error) {
         console.error('Failed to delete staff from server:', error);
       }
@@ -2636,9 +2616,9 @@ export default function App() {
       setTasks(prev => {
         const otherStaffTasks = prev.filter(t => t.staffId !== staffId);
         const currentStaffTasks = prev.filter(t => t.staffId === staffId);
-        
+
         const updatedStaffTasks: Task[] = [];
-        
+
         currentStaffTasks.forEach(t => {
           // Check for overlap
           if (t.endDate < start || t.startDate > end) {
@@ -2675,15 +2655,11 @@ export default function App() {
 
         return [...otherStaffTasks, ...updatedStaffTasks, task];
       });
-      
+
       // Persist to server (simplified: just add the new task, server doesn't know about overrides yet)
       // In a real app, we'd send the full updated state or specific delete/update commands
       try {
-        await fetch('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(task)
-        });
+        await supabase.from('tasks').insert([task]);
       } catch (error) {
         console.error('Failed to persist task to server:', error);
       }
@@ -2699,25 +2675,19 @@ export default function App() {
 
   const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
-    
+
     // Persist to server
-    fetch(`/api/tasks/${taskId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    }).catch(error => {
-      console.error('Failed to update task on server:', error);
+    supabase.from('tasks').update(updates as any).eq('id', taskId).then(({ error }) => {
+      if (error) console.error('Failed to update task on server:', error);
     });
   };
 
   const handleDeleteTask = (taskId: string) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    
+
     // Persist to server
-    fetch(`/api/tasks/${taskId}`, {
-      method: 'DELETE'
-    }).catch(error => {
-      console.error('Failed to delete task from server:', error);
+    supabase.from('tasks').delete().eq('id', taskId).then(({ error }) => {
+      if (error) console.error('Failed to delete task from server:', error);
     });
   };
 
@@ -2725,7 +2695,7 @@ export default function App() {
     const map: Record<string, Record<string, number>> = {};
     tasks.forEach(task => {
       if (!map[task.staffId]) map[task.staffId] = {};
-      
+
       timelineDates.forEach(date => {
         const dStr = formatDate(date);
         if (dStr >= task.startDate && dStr <= task.endDate) {
@@ -2739,7 +2709,7 @@ export default function App() {
   return (
     <div className={`flex h-screen overflow-hidden bg-background-light text-slate-900`}>
       <Sidebar currentView={currentView} setView={setView} />
-      
+
       <main className="flex-1 flex flex-col overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
@@ -2751,24 +2721,24 @@ export default function App() {
             className="flex-1 flex flex-col overflow-hidden"
           >
             {currentView === 'projects' && (
-              <ProjectsView 
-                projects={projects} 
-                onAddProject={() => setIsAddProjectModalOpen(true)} 
+              <ProjectsView
+                projects={projects}
+                onAddProject={() => setIsAddProjectModalOpen(true)}
               />
             )}
             {currentView === 'people' && (
-              <PeopleView 
-                staff={staff} 
+              <PeopleView
+                staff={staff}
                 onAddPerson={() => setIsAddPersonModalOpen(true)}
                 onEditPerson={openEditPersonModal}
                 onDeletePerson={handleDeletePerson}
               />
             )}
             {currentView === 'schedule' && (
-              <ScheduleView 
-                staff={selectedDepartment === 'All Departments' ? staff : staff.filter(s => s.department === selectedDepartment)} 
-                tasks={tasks} 
-                projects={projects} 
+              <ScheduleView
+                staff={selectedDepartment === 'All Departments' ? staff : staff.filter(s => s.department === selectedDepartment)}
+                tasks={tasks}
+                projects={projects}
                 onTaskClick={(t) => setSelectedTask(t)}
                 onAddTask={openCreateTaskModal}
                 onAddTaskImmediate={handleAddTask}
@@ -2789,10 +2759,10 @@ export default function App() {
               />
             )}
             {currentView === 'project-plan' && (
-              <ProjectPlanView 
-                projects={projects} 
-                staff={selectedDepartment === 'All Departments' ? staff : staff.filter(s => s.department === selectedDepartment)} 
-                tasks={tasks} 
+              <ProjectPlanView
+                projects={projects}
+                staff={selectedDepartment === 'All Departments' ? staff : staff.filter(s => s.department === selectedDepartment)}
+                tasks={tasks}
                 onAddTask={openCreateTaskModal}
                 onAddTaskImmediate={handleAddTask}
                 onUpdateTask={handleUpdateTask}
@@ -2816,19 +2786,19 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <StaffModal 
-        isOpen={isAddPersonModalOpen} 
+      <StaffModal
+        isOpen={isAddPersonModalOpen}
         onClose={() => {
           setIsAddPersonModalOpen(false);
           setEditingStaff(null);
-        }} 
-        onSave={handleAddPerson} 
+        }}
+        onSave={handleAddPerson}
         initialData={editingStaff}
       />
 
-      <TaskModal 
-        isOpen={!!selectedTask} 
-        onClose={() => setSelectedTask(null)} 
+      <TaskModal
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
         task={selectedTask}
         projects={projects}
         staff={staff}
@@ -2848,10 +2818,10 @@ export default function App() {
         initialValues={createTaskInitialValues}
       />
 
-      <AddProjectModal 
-        isOpen={isAddProjectModalOpen} 
-        onClose={() => setIsAddProjectModalOpen(false)} 
-        onCreate={handleCreateProject} 
+      <AddProjectModal
+        isOpen={isAddProjectModalOpen}
+        onClose={() => setIsAddProjectModalOpen(false)}
+        onCreate={handleCreateProject}
       />
     </div>
   );
