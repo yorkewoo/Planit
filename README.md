@@ -8,7 +8,7 @@
 
 This contains everything you need to run your app locally, now with a Supabase PostgreSQL database integration!
 
-View your app in AI Studio: https://ai.studio/apps/0e2541ac-de78-4cf0-b98c-58fdf0c6361a
+Powered by Google AI Studio
 
 ## Run Locally
 
