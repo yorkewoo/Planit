@@ -1,4 +1,4 @@
-# Planit Resource Planning App
+# PlanIt - the Resource Planning App
 
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/yorkewoo/Planit/blob/main/PlanIt.jpg" />
